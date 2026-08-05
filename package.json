@@ -3,12 +3,13 @@
   "version": "1.0.0-SNAPSHOT",
   "private": true,
   "scripts": {
-    "build": "nx build",
-    "test": "nx test",
-    "lint": "nx lint",
-    "format": "nx format",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "verify": "nx run-many -t verify",
+    "lint": "nx run-many -t lint",
+    "format": "nx run-many -t format",
     "graph": "nx graph",
-    "affected": "nx affected"
+    "affected": "nx affected -t lint test build"
   },
   "devDependencies": {
     "nx": "^19.5.0"

@@ -2,7 +2,10 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "plugins": [
     {
-      "plugin": "./tools/nx-maven/index.js"
+      "plugin": "./tools/nx-maven/index.js",
+      "options": {
+        "groupId": "com.acme"
+      }
     }
   ],
   "namedInputs": {
@@ -12,17 +15,23 @@
   },
   "targetDefaults": {
     "build": {
+      "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
     "test": {
-      "dependsOn": ["build", "^build"]
+      "cache": true,
+      "dependsOn": ["build", "^build"],
+      "inputs": ["default", "^production"]
     },
     "verify": {
-      "dependsOn": ["build", "^build"]
+      "cache": true,
+      "dependsOn": ["build", "^build"],
+      "inputs": ["default", "^production"]
     },
     "lint": {
-      "cache": true
+      "cache": true,
+      "inputs": ["default"]
     }
   }
 }

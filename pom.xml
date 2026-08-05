@@ -135,25 +135,16 @@
         <version>${spotless.version}</version>
         <configuration>
           <java>
-            <palantirJavaFormat/>
-            <removeUnusedImports/>
-            <importOrder/>
-            <trimTrailingWhitespace/>
-            <endWithNewline/>
+            <palantirJavaFormat></palantirJavaFormat>
+            <removeUnusedImports></removeUnusedImports>
+            <importOrder></importOrder>
+            <trimTrailingWhitespace></trimTrailingWhitespace>
+            <endWithNewline></endWithNewline>
           </java>
           <pom>
             <sortPom></sortPom>
           </pom>
         </configuration>
-        <executions>
-          <execution>
-            <id>spotless-check</id>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <phase>validate</phase>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>

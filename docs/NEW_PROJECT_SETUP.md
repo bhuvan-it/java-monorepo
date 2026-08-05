@@ -105,23 +105,23 @@ Create the root parent/aggregator `pom.xml` in your new repository root:
 
 ---
 
-### Step 4: Update GroupId in `tools/nx-maven/index.js`
-If your company uses a different `groupId` (e.g. `com.mycompany` instead of `com.acme`), update lines 37 and 93 in `tools/nx-maven/index.js`:
+### Step 4: Update GroupId in `nx.json`
+If your company uses a different `groupId` (e.g. `com.mycompany` instead of `com.acme`), simply update the `options` object in `nx.json`:
 
-```javascript
-// tools/nx-maven/index.js (line 37)
-if (groupId === 'com.mycompany' || groupId === '${project.groupId}' || groupId === '${pom.groupId}') {
-  result.push({ groupId: 'com.mycompany', artifactId });
+```json
+{
+  "plugins": [
+    {
+      "plugin": "./tools/nx-maven/index.js",
+      "options": {
+        "groupId": "com.mycompany"
+      }
+    }
+  ]
 }
 ```
 
-And in target outputs (line 93):
-```javascript
-outputs: [
-  `{projectRoot}/target`,
-  `{workspaceRoot}/.m2/repository/com/mycompany/${artifactId}`
-]
-```
+The plugin dynamically derives local repository paths (e.g., `{workspaceRoot}/.m2/repository/com/mycompany/${artifactId}`) and resolves dependencies matching `com.mycompany` or `${project.groupId}` automatically.
 
 ---
 

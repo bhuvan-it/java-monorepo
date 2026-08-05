@@ -15,11 +15,19 @@
   <dependencies>
     <dependency>
       <groupId>com.acme</groupId>
-      <artifactId>persistence</artifactId>
+      <artifactId>common-core</artifactId>
     </dependency>
     <dependency>
       <groupId>com.acme</groupId>
       <artifactId>common-logging</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.acme</groupId>
+      <artifactId>domain-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.acme</groupId>
+      <artifactId>persistence</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
