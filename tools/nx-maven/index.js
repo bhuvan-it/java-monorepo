@@ -32,7 +32,11 @@ function parsePomDependencies(content) {
     const gMatch = block.match(/<groupId>\s*([^<\s]+)\s*<\/groupId>/);
     const aMatch = block.match(/<artifactId>\s*([^<\s]+)\s*<\/artifactId>/);
     if (gMatch && aMatch) {
-      result.push({ groupId: gMatch[1], artifactId: aMatch[1] });
+      const groupId = gMatch[1].trim();
+      const artifactId = aMatch[1].trim();
+      if (groupId === 'com.acme' || groupId === '${project.groupId}' || groupId === '${pom.groupId}') {
+        result.push({ groupId: 'com.acme', artifactId });
+      }
     }
   }
   return result;
