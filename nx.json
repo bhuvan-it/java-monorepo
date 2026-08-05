@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "plugins": [
+    {
+      "plugin": "./tools/nx-maven/index.js"
+    }
+  ],
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": ["default", "!{projectRoot}/src/test/**", "!{projectRoot}/**/*.md"],
+    "sharedGlobals": ["{workspaceRoot}/pom.xml", "{workspaceRoot}/.mvn/**/*"]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "test": {
+      "dependsOn": ["build", "^build"]
+    },
+    "verify": {
+      "dependsOn": ["build", "^build"]
+    },
+    "lint": {
+      "cache": true
+    }
+  }
+}

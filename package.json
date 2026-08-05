@@ -1,0 +1,16 @@
+{
+  "name": "monorepo-parent",
+  "version": "1.0.0-SNAPSHOT",
+  "private": true,
+  "scripts": {
+    "build": "nx build",
+    "test": "nx test",
+    "lint": "nx lint",
+    "format": "nx format",
+    "graph": "nx graph",
+    "affected": "nx affected"
+  },
+  "devDependencies": {
+    "nx": "^19.5.0"
+  }
+}
