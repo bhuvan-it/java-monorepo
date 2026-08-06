@@ -25,7 +25,7 @@
     <spotless.version>2.44.0</spotless.version>
     <jacoco.version>0.8.12</jacoco.version>
     <surefire.version>3.3.1</surefire.version>
-    <failsafe.version>3.3.1</failsafe.version>
+    <failsafe.version>3.5.6</failsafe.version>
     <enforcer.version>3.5.0</enforcer.version>
     <compiler.plugin.version>3.13.0</compiler.plugin.version>
     <junit.version>5.10.3</junit.version>
