@@ -137,7 +137,6 @@ const createNodesV2 = [
         targets.lint = {
           command: `${mvnCmd} spotless:check -f ${normalizedFile}`,
           cache: true,
-          inputs: ['production', '^production'],
           options: { cwd: '.', env }
         };
         targets.format = {
@@ -179,7 +178,6 @@ const createNodesV2 = [
         targets.lint = {
           command: `${mvnCmd} spotless:check -f ${normalizedFile}`,
           cache: true,
-          inputs: ['production', '^production'],
           options: { cwd: '.', env }
         };
         targets.format = {
