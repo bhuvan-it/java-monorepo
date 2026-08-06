@@ -148,6 +148,39 @@
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.7.1</version>
+        <executions>
+          <execution>
+            <id>analyze-dependencies</id>
+            <goals>
+              <goal>analyze-only</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <failOnWarning>true</failOnWarning>
+              <ignoredUnusedDeclaredDependencies>
+                <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter*</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.assertj:assertj-core</ignoredUnusedDeclaredDependency>
+              </ignoredUnusedDeclaredDependencies>
+              <ignoredUsedUndeclaredDependencies>
+                <ignoredUsedUndeclaredDependency>org.junit.jupiter:junit-jupiter-api</ignoredUsedUndeclaredDependency>
+                <ignoredUsedUndeclaredDependency>org.junit.jupiter:junit-jupiter-params</ignoredUsedUndeclaredDependency>
+                <ignoredUsedUndeclaredDependency>org.springframework*:*</ignoredUsedUndeclaredDependency>
+                <ignoredUsedUndeclaredDependency>org.springframework.boot:*</ignoredUsedUndeclaredDependency>
+              </ignoredUsedUndeclaredDependencies>
+              <ignoredNonTestScopedDependencies>
+                <ignoredNonTestScopedDependency>org.springframework*:*</ignoredNonTestScopedDependency>
+                <ignoredNonTestScopedDependency>org.springframework.boot:*</ignoredNonTestScopedDependency>
+              </ignoredNonTestScopedDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>${jacoco.version}</version>

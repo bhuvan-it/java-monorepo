@@ -5,6 +5,7 @@
   "scripts": {
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
+    "test:plugin": "node --test tools/nx-maven/",
     "verify": "nx run-many -t verify",
     "lint": "nx run-many -t lint",
     "format": "nx run-many -t format",
@@ -12,6 +13,6 @@
     "affected": "nx affected -t lint test build"
   },
   "devDependencies": {
-    "nx": "^19.5.0"
+    "nx": "23.1.1"
   }
 }

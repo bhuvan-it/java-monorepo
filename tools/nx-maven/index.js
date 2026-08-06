@@ -111,7 +111,7 @@ const createNodesV2 = [
       const rawDir = dirname(normalizedFile);
       const projectRoot = rawDir === '.' ? '.' : rawDir;
       const isRoot = projectRoot === '.';
-      const isSpringBootApp = content.includes('spring-boot-maven-plugin');
+      const isSpringBootApp = packaging !== 'pom' && content.includes('spring-boot-maven-plugin');
 
       const targets = {};
 
@@ -147,13 +147,21 @@ const createNodesV2 = [
         targets.test = {
           command: `mvn test -f ${normalizedFile}`,
           cache: true,
-          outputs: [`{projectRoot}/target`],
+          outputs: [
+            `{projectRoot}/target/surefire-reports`,
+            `{projectRoot}/target/site/jacoco`,
+            `{projectRoot}/target/jacoco.exec`
+          ],
           options: { cwd: '.', env }
         };
         targets.verify = {
           command: `mvn verify -f ${normalizedFile}`,
           cache: true,
-          outputs: [`{projectRoot}/target`],
+          outputs: [
+            `{projectRoot}/target/failsafe-reports`,
+            `{projectRoot}/target/surefire-reports`,
+            `{projectRoot}/target/site/jacoco`
+          ],
           options: { cwd: '.', env }
         };
         targets.lint = {
@@ -186,7 +194,7 @@ const createNodesV2 = [
               tags: [
                 'lang:java',
                 `packaging:${packaging}`,
-                `type:${isSpringBootApp ? 'app' : isRoot ? 'parent' : 'lib'}`
+                `type:${isSpringBootApp ? 'app' : packaging === 'pom' || isRoot ? 'parent' : 'lib'}`
               ],
               metadata: {
                 technologies: ['maven', 'java'],
@@ -258,6 +266,12 @@ const createDependencies = (options, context) => {
 
 module.exports = {
   name,
+  getPomHeaderSlice,
+  parsePomArtifactId,
+  parsePomPackaging,
+  parsePomDescription,
+  parsePomParent,
+  parsePomDependencies,
   createNodesV2,
   createDependencies
 };

@@ -100,14 +100,15 @@ mvn -version
 
 ### Running Applications
 
-- **Run Spring Boot application locally**:
+- **Run Spring Boot applications locally**:
   ```bash
+  # Order Service runs on http://localhost:8081
   npx nx serve order-service
-  ```
-  or
-  ```bash
+
+  # Inventory Service runs on http://localhost:8082
   npx nx serve inventory-service
   ```
+  *Both services can be run concurrently in separate terminals without port conflicts.*
 
 ---
 

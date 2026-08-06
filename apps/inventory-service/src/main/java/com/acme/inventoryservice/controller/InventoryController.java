@@ -1,6 +1,7 @@
 package com.acme.inventoryservice.controller;
 
 import com.acme.inventoryservice.service.InventoryAppService;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,11 @@ public class InventoryController {
 
     public InventoryController(InventoryAppService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    public ResponseEntity<Map<String, String>> status() {
+        return ResponseEntity.ok(Map.of("status", "UP", "service", "inventory-service"));
     }
 
     @PostMapping("/stock")

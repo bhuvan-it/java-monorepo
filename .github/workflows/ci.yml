@@ -58,6 +58,9 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Run Nx plugin unit tests
+        run: npm run test:plugin
+
       - name: Run Nx Affected Tasks (lint, test, build)
         run: npx nx affected -t lint test build --parallel=3
 
