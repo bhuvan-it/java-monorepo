@@ -17,7 +17,7 @@ Do NOT delegate task execution to Maven reactor builds (do NOT run `mvn install`
 
 ---
 
-## Phase 0: Discovery & Baseline Capture (PRE-MIGRATION SAFEGUARDS)
+## Phase 0: Discovery, Baselines & Module Strategy (PRE-MIGRATION SAFEGUARDS)
 
 Before modifying any source code or configuration files, execute discovery and record baselines:
 
@@ -26,13 +26,17 @@ Before modifying any source code or configuration files, execute discovery and r
    - Identify existing `.mvn/` configurations, `settings.xml` mirrors, and custom release/deployment plugins.
 2. **Coordinate Stability Guarantee**:
    - `groupId`, `artifactId`, and `version` coordinates of existing modules MUST remain 100% stable so downstream consumers are not broken.
-3. **Capture Baseline Artifacts**:
+3. **Module Decomposition Strategy**:
+   - Do **NOT** attempt to split monolithic projects or alter existing module directory structures during the build migration phase.
+   - Adopting Nx + Maven task caching works seamlessly on any directory layout. Module decomposition (e.g. splitting into `libs/` and `apps/`) is an independent refactoring concern and MUST be deferred to a separate phase *after* the build migration lands.
+4. **Capture Baseline Artifacts**:
    Run the following baseline commands and save outputs:
    ```bash
    ./mvnw -B dependency:tree > /tmp/before-deps.txt
    ./mvnw -B test > /tmp/before-tests.txt
+   ./mvnw -B verify > /tmp/before-verify.txt
    ```
-   After migration, verify that the dependency tree and test counts match the baseline exactly.
+   Extract and record current JaCoCo line coverage percentage and total test counts as your migration baseline.
 
 ---
 
@@ -85,7 +89,7 @@ To prevent child POMs from inheriting the parent's `artifactId`:
 - **`projectType` & `tags`**:
   - `projectType`: `'application'` if Spring Boot app, `'library'` for all other modules (including POM aggregators).
   - `tags`: `['lang:java', 'packaging:<p>', 'type:<app|parent|lib>']`.
-- **Graph Dependencies (`createDependencies`)**: Iterate over `context.projects` to construct graph edges matching inter-module POM `<dependencies>` and `<parent>` references. Support groupId prefix matching or groupId arrays to handle multi-groupId enterprise repositories.
+- **Graph Dependencies (`createDependencies`)**: Iterate over `context.projects` to construct graph edges matching inter-module POM `<dependencies>` and `<parent>` references. Support `options.groupId` or `options.groupIds` array to handle multi-groupId enterprise repositories.
 
 ### Plugin Unit Tests (`tools/nx-maven/index.test.js`)
 Create a unit test suite using `node:test` covering:
@@ -105,7 +109,7 @@ Create a unit test suite using `node:test` covering:
 
 ## Phase 3: Workspace Config (`nx.json`, `package.json`, `.nxignore`)
 
-### 1. `nx.json` (Explicit Task Granularity & Dependency Order)
+### 1. `nx.json` (Explicit Options Form & Task Inputs)
 ```json
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
@@ -145,12 +149,20 @@ Create a unit test suite using `node:test` covering:
       "inputs": ["default"]
     }
   },
-  "plugins": ["./tools/nx-maven/index.js"]
+  "plugins": [
+    {
+      "plugin": "./tools/nx-maven/index.js",
+      "options": {
+        "groupId": "com.acme",
+        "groupIds": ["com.acme"]
+      }
+    }
+  ]
 }
 ```
 
 ### 2. `package.json`
-Pin `nx` exactly and define workspace scripts:
+Pin `nx` exactly matching the working repo version (`23.1.1`) and define workspace scripts:
 ```json
 {
   "name": "monorepo-root",
@@ -166,7 +178,7 @@ Pin `nx` exactly and define workspace scripts:
     "test:plugin": "node --test tools/nx-maven/"
   },
   "devDependencies": {
-    "nx": "19.5.6"
+    "nx": "23.1.1"
   }
 }
 ```
@@ -194,13 +206,13 @@ Configure parent `pom.xml` with non-destructive, ratcheted quality gates:
    - Dynamic Java version: `<requireJavaVersion><version>[${java.version},)</version></requireJavaVersion>`.
    - `<banDuplicatePomDependencyVersions/>`.
 2. **Dependency Hygiene (`maven-dependency-plugin`)**:
-   - Bind `analyze-only` to `verify` phase. In migration mode, set `<failOnWarning>false</failOnWarning>` initially to log undeclared/unused dependencies without breaking existing builds.
+   - Bind `analyze-only` to `verify` phase. Set `<failOnWarning>false</failOnWarning>` initially during migration. Once warnings are cleaned, flip to `<failOnWarning>true</failOnWarning>`.
 3. **Spotless Code Formatter (`spotless-maven-plugin`)**:
    - Configure `palantirJavaFormat`, `removeUnusedImports`, `importOrder`, `trimTrailingWhitespace`, `endWithNewline`.
    - Use `<ratchetFrom>origin/main</ratchetFrom>` so formatting rules only apply to modified files and do not disrupt `git blame` across untouched legacy code.
 4. **JaCoCo Coverage Ratcheting (`jacoco-maven-plugin`)**:
    - Bind `prepare-agent` and `report` to `test` phase, and `check` to `verify` phase.
-   - Set `<jacoco.line.minimum>` to the **measured baseline coverage** of the codebase, ratcheting up over time.
+   - Set `<jacoco.line.minimum>` to the **measured baseline coverage percentage from Phase 0**, ratcheting up over time.
 5. **Surefire & Failsafe Plugins**:
    - `maven-surefire-plugin`: Include `**/*Test.java`, exclude `**/*IT.java`, set `<argLine>@{argLine}</argLine>`.
    - `maven-failsafe-plugin`: Include `**/*IT.java`, bind `integration-test` and `verify` goals.
@@ -212,28 +224,32 @@ Configure parent `pom.xml` with non-destructive, ratcheted quality gates:
 ## Phase 5: Spring Boot & Aggregate Coverage
 
 1. **Spring Boot Exec Classifier**: Configure `spring-boot-maven-plugin` with `<classifier>exec</classifier>` in application POMs so standard library JARs remain available for compile-time/JaCoCo dependencies alongside executable archives.
-2. **Aggregate Coverage Module**: Create `libs/coverage-aggregate` (`<packaging>pom</packaging>`) depending on all code modules and running `jacoco:report-aggregate` on `verify`.
+2. **Aggregate Coverage Module**: Create an aggregate coverage module (`<packaging>pom</packaging>`) depending on all code modules and running `jacoco:report-aggregate` on `verify`.
 
 ---
 
-## Phase 6: Supply-Chain & CI Workflow (`.github/workflows/ci.yml`)
+## Phase 6: Supply-Chain Hardening & CI Workflow (`.github/workflows/ci.yml`)
 
-1. **Action SHA Pinning**: Pin all GitHub Actions to 40-character commit SHAs.
-2. **CI Pipeline Steps**:
-   - `fetch-depth: 0` on checkout.
+1. **Action SHA Pinning & Security**: Pin all GitHub Actions to 40-character commit SHAs. Include `permissions: contents: read`, `concurrency`, and `timeout-minutes: 30`.
+2. **CI Caching & Pipeline Steps**:
+   - `actions/checkout` with `fetch-depth: 0`.
+   - `actions/cache` for `.m2/repository` (`key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}`).
+   - `actions/cache` for `.nx/cache` (`key: ${{ runner.os }}-nx-${{ github.sha }}`).
    - `npm run test:plugin`.
-   - `npx nx affected -t lint test build`.
-   - `npx nx affected -t verify`.
-   - `./mvnw -B verify` (Plain-Maven escape hatch job).
-3. **Dependabot**: Add `.github/dependabot.yml` for weekly `maven` and `github-actions` updates.
+   - `npx nx affected -t lint test build --parallel=3`.
+   - `npx nx affected -t verify --parallel=2`.
+   - `actions/upload-artifact` for test reports.
+3. **Parallel-CI Transition Period**:
+   - Keep the existing plain-Maven CI workflow running in parallel alongside the new `nx affected` pipeline for 2–4 weeks to validate stability before decommissioning the legacy pipeline.
+4. **Dependabot**: Add `.github/dependabot.yml` for weekly `maven` and `github-actions` updates.
 
 ---
 
-## Phase 7: Verification & Validation Protocol
+## Phase 7: Verification & Baseline Validation Protocol
 
 After completing migration, execute this verification protocol:
 
-1. **Plugin Unit Tests**: `node --test tools/nx-maven/` (Must pass all tests).
+1. **Plugin Unit Tests**: `node --test tools/nx-maven/` (Must pass 11/11 tests).
 2. **Task Input Granularity Test (Verifies `nx.json` Caching)**:
    ```bash
    touch <any-lib>/src/test/java/.../SomeTest.java
@@ -255,10 +271,31 @@ After completing migration, execute this verification protocol:
    find .m2/repository -name "*.jar"
    # Must restore all module JARs to .m2 from cache
    ```
-5. **Baseline Comparison**:
+5. **Full Plain-Maven Verification**:
+   ```bash
+   ./mvnw -B verify
+   # Must return 100% BUILD SUCCESS across all reactor modules
+   ```
+6. **Baseline Diff Comparison**:
    ```bash
    ./mvnw -B dependency:tree > /tmp/after-deps.txt
+   ./mvnw -B test > /tmp/after-tests.txt
    diff /tmp/before-deps.txt /tmp/after-deps.txt
-   # Must match baseline dependency tree
+   # Dependency tree and total test counts must match Phase 0 baselines exactly
    ```
+7. **End-State Enforcement Ratchet**:
+   Once initial dependency warnings are resolved, flip `<failOnWarning>true</failOnWarning>` on `maven-dependency-plugin` in root `pom.xml`.
+
+---
+
+## Phase 8: Deferred Code & Testing Conventions (POST-MIGRATION OPT-IN)
+
+After the build migration lands cleanly, adopt the following application and testing standards incrementally:
+
+1. **AssertJ Assertions**: Standardize 100% of unit and integration tests on AssertJ (`assertThat`).
+2. **Zero Wildcard Imports**: Eliminate wildcard static imports (`import static ...*;`) across Java source and test files.
+3. **Controller Unit Tests**: Use Spring `@WebMvcTest` with `MockMvc` to test parameter binding, service delegation, 200 OK, and 400 Bad Request paths.
+4. **Integration Tests**: Name end-to-end integration tests `*IT.java` and execute with `@SpringBootTest(webEnvironment = RANDOM_PORT)` and `TestRestTemplate`.
+5. **Domain Error Representation**: Represent business operation errors via typed `Result<T>` (`Result.Ok<T>` / `Result.Err<T>`). Map `Result.Err` in controllers to `400 Bad Request` with `@ControllerAdvice` (`GlobalExceptionHandler`) backstops.
+6. **Observability & Ports**: Add `spring-boot-starter-actuator` exposing `/actuator/health` and `/actuator/info`. Assign distinct `server.port` values in `application.yaml`.
 ```
