@@ -8,9 +8,9 @@ Welcome to the Acme Java Monorepo! This repository uses **Nx** for computation c
 
 Before starting, ensure you have the following installed on your machine:
 
-1. **Java JDK 21+**: Temurin, Corretto, or Oracle JDK 21+.
-2. **Node.js 18+ / 22+**: Required to execute Nx commands (`npx nx`).
-3. **Apache Maven 3.9+**: Installed and available on your system `PATH`.
+1.- **Java 21 JDK**: Installed and configured on `PATH`.
+- **Node.js 18+ & npm**: Required to run Nx task orchestrator.
+- **Maven Wrapper (`./mvnw`)**: Included in the repository (Maven 3.9.9); no standalone Maven installation required.
 
 Verify installations:
 ```bash

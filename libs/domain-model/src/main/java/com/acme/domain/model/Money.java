@@ -21,10 +21,6 @@ public record Money(BigDecimal amount, String currency) implements Comparable<Mo
         return new Money(new BigDecimal(amount), currency);
     }
 
-    public static Money of(double amount, String currency) {
-        return new Money(BigDecimal.valueOf(amount), currency);
-    }
-
     public static Money zero(String currency) {
         return new Money(BigDecimal.ZERO, currency);
     }

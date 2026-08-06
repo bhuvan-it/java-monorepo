@@ -97,7 +97,8 @@ const createNodesV2 = [
       if (configFile.includes('node_modules') || configFile.includes('.m2')) {
         continue;
       }
-      const fullPath = join(context.workspaceRoot, configFile);
+      const root = context?.workspaceRoot ?? process.cwd();
+      const fullPath = join(root, configFile);
       if (!existsSync(fullPath)) continue;
 
       const content = readFileSync(fullPath, 'utf8');
@@ -114,29 +115,31 @@ const createNodesV2 = [
       const isSpringBootApp = packaging !== 'pom' && content.includes('spring-boot-maven-plugin');
 
       const targets = {};
+      const isWin = process.platform === 'win32';
+      const mvnCmd = isWin ? 'mvnw.cmd' : './mvnw';
 
       if (isRoot) {
         targets.build = {
-          command: `mvn install -N -f pom.xml`,
+          command: `${mvnCmd} install -N -f pom.xml`,
           cache: true,
           inputs: ['{workspaceRoot}/pom.xml'],
           outputs: [`{workspaceRoot}/.m2/repository/${groupIdPath}/${artifactId}`],
           options: { cwd: '.', env }
         };
         targets.lint = {
-          command: `mvn spotless:check -N -f pom.xml`,
+          command: `${mvnCmd} spotless:check -N -f pom.xml`,
           cache: true,
           inputs: ['{workspaceRoot}/pom.xml'],
           options: { cwd: '.', env }
         };
         targets.format = {
-          command: `mvn spotless:apply -N -f pom.xml`,
+          command: `${mvnCmd} spotless:apply -N -f pom.xml`,
           cache: false,
           options: { cwd: '.', env }
         };
       } else {
         targets.build = {
-          command: `mvn install -DskipTests -f ${normalizedFile}`,
+          command: `${mvnCmd} install -DskipTests -f ${normalizedFile}`,
           cache: true,
           outputs: [
             `{projectRoot}/target`,
@@ -145,7 +148,7 @@ const createNodesV2 = [
           options: { cwd: '.', env }
         };
         targets.test = {
-          command: `mvn test -f ${normalizedFile}`,
+          command: `${mvnCmd} test -f ${normalizedFile}`,
           cache: true,
           outputs: [
             `{projectRoot}/target/surefire-reports`,
@@ -155,7 +158,7 @@ const createNodesV2 = [
           options: { cwd: '.', env }
         };
         targets.verify = {
-          command: `mvn verify -f ${normalizedFile}`,
+          command: `${mvnCmd} verify -f ${normalizedFile}`,
           cache: true,
           outputs: [
             `{projectRoot}/target/failsafe-reports`,
@@ -165,18 +168,18 @@ const createNodesV2 = [
           options: { cwd: '.', env }
         };
         targets.lint = {
-          command: `mvn spotless:check -f ${normalizedFile}`,
+          command: `${mvnCmd} spotless:check -f ${normalizedFile}`,
           cache: true,
           options: { cwd: '.', env }
         };
         targets.format = {
-          command: `mvn spotless:apply -f ${normalizedFile}`,
+          command: `${mvnCmd} spotless:apply -f ${normalizedFile}`,
           cache: false,
           options: { cwd: '.', env }
         };
         if (isSpringBootApp) {
           targets.serve = {
-            command: `mvn spring-boot:run -f ${normalizedFile}`,
+            command: `${mvnCmd} spring-boot:run -f ${normalizedFile}`,
             cache: false,
             options: { cwd: '.', env }
           };
