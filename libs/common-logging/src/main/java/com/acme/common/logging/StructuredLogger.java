@@ -1,6 +1,5 @@
 package com.acme.common.logging;
 
-import com.acme.common.core.Money;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,13 +12,13 @@ public class StructuredLogger {
         this.contextName = contextName;
     }
 
-    public String formatLog(String action, String entityId, Money amount) {
+    public String formatLog(String action, String entityId, Object detail) {
         StringBuilder sb = new StringBuilder();
         sb.append("[").append(contextName).append("] ");
         sb.append("action=").append(action);
         sb.append(" entityId=").append(entityId);
-        if (amount != null) {
-            sb.append(" amount=").append(amount);
+        if (detail != null) {
+            sb.append(" detail=").append(detail);
         }
         String logMessage = sb.toString();
         log.info(logMessage);

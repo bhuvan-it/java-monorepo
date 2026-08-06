@@ -1,29 +1,32 @@
 package com.acme.domain.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 
-import com.acme.common.core.Money;
+import com.acme.common.core.Result;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class OrderTest {
 
     @Test
-    void shouldCalculateTotalForOrderLines() {
-        Order order = new Order("ORD-1", "CUST-100", "USD");
-        order.addLine(new OrderLine("ITEM-A", 2, Money.of(10.0, "USD")));
-        order.addLine(new OrderLine("ITEM-B", 1, Money.of(25.0, "USD")));
+    void testOrderCreationAndTotal() {
+        OrderLine line1 = new OrderLine("SKU-1", 2, Money.of("10.00", "USD"));
+        OrderLine line2 = new OrderLine("SKU-2", 1, Money.of("25.00", "USD"));
 
-        assertThat(order.total()).isEqualTo(Money.of(45.0, "USD"));
+        Result<Order> result = Order.create("CUST-100", List.of(line1, line2));
+        assertTrue(result.isOk());
+
+        Order order = result.orElseThrow();
+        assertEquals(3, order.itemCount());
+        assertEquals(Money.of("45.00", "USD"), order.total());
     }
 
     @Test
-    void shouldRejectMismatchingCurrencyLine() {
-        Order order = new Order("ORD-1", "CUST-100", "USD");
-        OrderLine lineInEur = new OrderLine("ITEM-A", 1, Money.of(10.0, "EUR"));
+    void testCurrencyMismatchInLines() {
+        OrderLine line1 = new OrderLine("SKU-1", 1, Money.of("10.00", "USD"));
+        OrderLine line2 = new OrderLine("SKU-2", 1, Money.of("10.00", "EUR"));
 
-        assertThatThrownBy(() -> order.addLine(lineInEur))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not match order currency");
+        Result<Order> result = Order.create("CUST-100", List.of(line1, line2));
+        assertTrue(result instanceof Result.Err);
     }
 }

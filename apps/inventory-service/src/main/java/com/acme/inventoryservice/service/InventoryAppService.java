@@ -8,25 +8,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class InventoryAppService {
 
-    private final Map<String, Integer> stock = new ConcurrentHashMap<>();
     private final StructuredLogger logger = new StructuredLogger("INVENTORY-SERVICE");
+    private final Map<String, Integer> stockMap = new ConcurrentHashMap<>();
 
-    public void addStock(String productId, int quantity) {
-        stock.merge(productId, quantity, Integer::sum);
-        logger.formatLog("ADD_STOCK", productId, null);
+    public void addStock(String sku, int quantity) {
+        stockMap.merge(sku, quantity, Integer::sum);
+        logger.formatLog("ADD_STOCK", sku, quantity);
     }
 
-    public boolean reserveStock(String productId, int quantity) {
-        Integer current = stock.get(productId);
-        if (current != null && current >= quantity) {
-            stock.put(productId, current - quantity);
-            logger.formatLog("RESERVE_STOCK", productId, null);
+    public boolean reserveStock(String sku, int quantity) {
+        Integer current = stockMap.getOrDefault(sku, 0);
+        if (current >= quantity) {
+            stockMap.put(sku, current - quantity);
+            logger.formatLog("RESERVE_STOCK", sku, quantity);
             return true;
         }
         return false;
     }
 
-    public int getAvailableStock(String productId) {
-        return stock.getOrDefault(productId, 0);
+    public int getStock(String sku) {
+        return stockMap.getOrDefault(sku, 0);
+    }
+
+    public int getAvailableStock(String sku) {
+        return getStock(sku);
     }
 }

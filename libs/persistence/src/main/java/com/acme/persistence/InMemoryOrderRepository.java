@@ -9,22 +9,18 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class InMemoryOrderRepository {
 
-    private final Map<String, Order> storage = new ConcurrentHashMap<>();
+    private final Map<String, Order> store = new ConcurrentHashMap<>();
 
     public Order save(Order order) {
-        storage.put(order.getOrderId(), order);
+        store.put(order.id(), order);
         return order;
     }
 
-    public Optional<Order> findById(String orderId) {
-        return Optional.ofNullable(storage.get(orderId));
-    }
-
-    public void deleteById(String orderId) {
-        storage.remove(orderId);
+    public Optional<Order> findById(String id) {
+        return Optional.ofNullable(store.get(id));
     }
 
     public int count() {
-        return storage.size();
+        return store.size();
     }
 }

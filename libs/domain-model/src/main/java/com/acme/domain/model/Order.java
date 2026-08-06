@@ -1,55 +1,41 @@
 package com.acme.domain.model;
 
-import com.acme.common.core.Money;
-import java.util.ArrayList;
-import java.util.Collections;
+import com.acme.common.core.Ids;
+import com.acme.common.core.Result;
 import java.util.List;
 import java.util.Objects;
 
-public class Order {
+public record Order(String id, String customerId, List<OrderLine> lines) {
 
-    private final String orderId;
-    private final String customerId;
-    private final String currency;
-    private final List<OrderLine> lines = new ArrayList<>();
-
-    public Order(String orderId, String customerId, String currency) {
-        this.orderId = Objects.requireNonNull(orderId, "orderId must not be null");
-        this.customerId = Objects.requireNonNull(customerId, "customerId must not be null");
-        this.currency =
-                Objects.requireNonNull(currency, "currency must not be null").toUpperCase();
+    public Order {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(customerId, "customerId");
+        Objects.requireNonNull(lines, "lines");
+        lines = List.copyOf(lines);
     }
 
-    public String getOrderId() {
-        return orderId;
-    }
-
-    public String getCustomerId() {
-        return customerId;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public List<OrderLine> getLines() {
-        return Collections.unmodifiableList(lines);
-    }
-
-    public void addLine(OrderLine line) {
-        Objects.requireNonNull(line, "line must not be null");
-        if (!line.getUnitPrice().getCurrency().equals(this.currency)) {
-            throw new IllegalArgumentException("Line currency "
-                    + line.getUnitPrice().getCurrency() + " does not match order currency " + this.currency);
+    public static Result<Order> create(String customerId, List<OrderLine> lines) {
+        if (customerId == null || customerId.isBlank()) {
+            return Result.err("customerId must not be blank");
         }
-        lines.add(line);
+        if (lines == null || lines.isEmpty()) {
+            return Result.err("an order needs at least one line");
+        }
+        long distinctCurrencies = lines.stream()
+                .map(line -> line.unitPrice().currency())
+                .distinct()
+                .count();
+        if (distinctCurrencies > 1) {
+            return Result.err("all order lines must share one currency");
+        }
+        return Result.ok(new Order(Ids.newId("ord"), customerId, lines));
     }
 
     public Money total() {
-        Money sum = Money.zero(currency);
-        for (OrderLine line : lines) {
-            sum = sum.add(line.totalPrice());
-        }
-        return sum;
+        return lines.stream().map(OrderLine::lineTotal).reduce(Money::plus).orElseThrow();
+    }
+
+    public int itemCount() {
+        return lines.stream().mapToInt(OrderLine::quantity).sum();
     }
 }
