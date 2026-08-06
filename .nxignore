@@ -2,4 +2,6 @@
 docs/
 LICENSE
 CONTRIBUTING.md
-.github/
+.github/dependabot.yml
+.github/CODEOWNERS
+.github/ISSUE_TEMPLATE/
