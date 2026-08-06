@@ -234,7 +234,15 @@ Configure parent `pom.xml` with non-destructive, ratcheted quality gates:
 1. **Action SHA Pinning & Security**: Pin all GitHub Actions to 40-character commit SHAs. Include `permissions: contents: read`, `concurrency`, and `timeout-minutes: 30`.
 2. **CI Caching & Pipeline Steps**:
    - `actions/checkout` with `fetch-depth: 0`.
-   - `actions/cache` for `.m2/repository`: To prevent exceeding GitHub's 10 GB cache quota in large enterprise repositories, cache specific internal groupIds (`.m2/repository/com/acme`) or use `key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}`.
+   - `actions/cache` for `.m2/repository`: To prevent exceeding GitHub's 10 GB cache quota and avoid cache churning, cache the tree but exclude internal groupIds that change every build:
+     ```yaml
+     - uses: actions/cache@<sha>
+       with:
+         path: |
+           .m2/repository
+           !.m2/repository/com/acme
+         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+     ```
    - `actions/cache` for `.nx/cache` (`key: ${{ runner.os }}-nx-${{ github.sha }}`).
    - `npm run test:plugin`.
    - `npx nx affected -t lint test build --parallel=3`.
@@ -286,7 +294,8 @@ After completing migration, execute this verification protocol:
    diff /tmp/before-deps.txt /tmp/after-deps.txt
 
    # Diff test counts (must be identical)
-   diff <(grep -h "Tests run:" /tmp/before-tests.txt) <(grep -h "Tests run:" /tmp/after-tests.txt)
+   diff <(grep -ho "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" /tmp/before-tests.txt) \
+        <(grep -ho "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" /tmp/after-tests.txt)
    ```
 7. **End-State Enforcement Ratchet**:
    Once initial dependency warnings are resolved, flip `<failOnWarning>true</failOnWarning>` on `maven-dependency-plugin` in root `pom.xml`.
