@@ -86,7 +86,8 @@ const createNodesV2 = [
       const rawDir = dirname(normalizedFile);
       const projectRoot = rawDir === '.' ? '.' : rawDir;
       const isRoot = projectRoot === '.';
-      const isSpringBootApp = packaging !== 'pom' && content.includes('spring-boot-maven-plugin');
+      const isPom = packaging === 'pom';
+      const isSpringBootApp = !isPom && content.includes('spring-boot-maven-plugin');
 
       const targets = {};
       const isWin = process.platform === 'win32';
@@ -108,6 +109,39 @@ const createNodesV2 = [
         };
         targets.format = {
           command: `${mvnCmd} spotless:apply -N -f pom.xml`,
+          cache: false,
+          options: { cwd: '.', env }
+        };
+      } else if (isPom) {
+        targets.build = {
+          command: `${mvnCmd} install -DskipTests -f ${normalizedFile}`,
+          cache: true,
+          outputs: [
+            `{projectRoot}/target`,
+            `{workspaceRoot}/.m2/repository/${groupIdPath}/${artifactId}`
+          ],
+          options: { cwd: '.', env }
+        };
+        targets.verify = {
+          command: `${mvnCmd} verify -f ${normalizedFile}`,
+          cache: true,
+          outputs: [
+            `{projectRoot}/target/surefire-reports`,
+            `{projectRoot}/target/failsafe-reports`,
+            `{projectRoot}/target/site/jacoco`,
+            `{projectRoot}/target/site/jacoco-aggregate`,
+            `{projectRoot}/target/jacoco.exec`
+          ],
+          options: { cwd: '.', env }
+        };
+        targets.lint = {
+          command: `${mvnCmd} spotless:check -f ${normalizedFile}`,
+          cache: true,
+          inputs: ['production', '^production'],
+          options: { cwd: '.', env }
+        };
+        targets.format = {
+          command: `${mvnCmd} spotless:apply -f ${normalizedFile}`,
           cache: false,
           options: { cwd: '.', env }
         };

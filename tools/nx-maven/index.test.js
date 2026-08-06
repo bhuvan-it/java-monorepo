@@ -254,4 +254,38 @@ describe('nx-maven plugin unit tests', () => {
       cleanupTempWorkspace(tmpDir);
     }
   });
+
+  test('11. Non-root POM module (<packaging>pom</packaging>) produces type:parent tag, retains verify target, and omits test target', () => {
+    const tmpDir = createTempWorkspace();
+    try {
+      const aggDir = path.join(tmpDir, 'libs', 'coverage-aggregate');
+      fs.mkdirSync(aggDir, { recursive: true });
+      const pomPath = path.join(aggDir, 'pom.xml');
+      const pomContent = `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.acme</groupId>
+    <artifactId>monorepo-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>coverage-aggregate</artifactId>
+  <packaging>pom</packaging>
+</project>`;
+      fs.writeFileSync(pomPath, pomContent);
+
+      const createNodes = plugin.createNodesV2[1];
+      const nodes = createNodes(['libs/coverage-aggregate/pom.xml'], { groupId: 'com.acme' }, { workspaceRoot: tmpDir });
+      assert.equal(nodes.length, 1);
+      const [, config] = nodes[0];
+      const project = config.projects['libs/coverage-aggregate'];
+
+      assert.equal(project.name, 'coverage-aggregate');
+      assert.ok(project.tags.includes('type:parent'));
+      assert.equal(project.targets.test, undefined);
+      assert.ok(project.targets.verify);
+    } finally {
+      cleanupTempWorkspace(tmpDir);
+    }
+  });
 });
