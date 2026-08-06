@@ -1,6 +1,6 @@
 package com.acme.orderservice.service;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.acme.common.logging.AuditLog;
 import com.acme.domain.model.Money;
@@ -17,7 +17,7 @@ class OrderAppServiceTest {
         OrderAppService service = new OrderAppService(repo, auditLog);
 
         Order order = service.createOrder("CUST-1", "SKU-1", 2, "10.00", "USD").orElseThrow();
-        assertNotNull(order.id());
-        assertEquals(Money.of("20.00", "USD"), order.total());
+        assertThat(order.id()).isNotNull();
+        assertThat(order.total()).isEqualTo(Money.of("20.00", "USD"));
     }
 }

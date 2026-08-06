@@ -1,6 +1,6 @@
 package com.acme.domain.model;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
@@ -10,15 +10,15 @@ class ProductTest {
     void testCreateValidProduct() {
         Money price = Money.of("19.99", "USD");
         Product product = Product.create("PROD-1", "Test Product", price).orElseThrow();
-        assertEquals("PROD-1", product.sku());
-        assertEquals("Test Product", product.name());
-        assertEquals(price, product.price());
+        assertThat(product.sku()).isEqualTo("PROD-1");
+        assertThat(product.name()).isEqualTo("Test Product");
+        assertThat(product.price()).isEqualTo(price);
     }
 
     @Test
     void testCreateInvalidProduct() {
-        assertFalse(Product.create("", "Test Product", Money.of("19.99", "USD")).isOk());
-        assertFalse(Product.create("PROD-1", "", Money.of("19.99", "USD")).isOk());
-        assertFalse(Product.create("PROD-1", "Test Product", Money.zero("USD")).isOk());
+        assertThat(Product.create("", "Test Product", Money.of("19.99", "USD")).isOk()).isFalse();
+        assertThat(Product.create("PROD-1", "", Money.of("19.99", "USD")).isOk()).isFalse();
+        assertThat(Product.create("PROD-1", "Test Product", Money.zero("USD")).isOk()).isFalse();
     }
 }
