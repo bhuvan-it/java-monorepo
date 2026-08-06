@@ -23,7 +23,7 @@ Before modifying any source code or configuration files, execute discovery and r
 
 1. **Inventory Current Workspace**:
    - Record JDK version, Maven version, packaging types, module layout, and existing CI workflows.
-   - Identify existing `.mvn/` configurations, `settings.xml` mirrors, and custom release/deployment plugins.
+   - Identify existing `.mvn/` configurations, `settings.xml` mirrors, deployment pipelines, and `nexus-staging-maven-plugin` / `maven-deploy-plugin` steps.
 2. **Coordinate Stability Guarantee**:
    - `groupId`, `artifactId`, and `version` coordinates of existing modules MUST remain 100% stable so downstream consumers are not broken.
 3. **Module Decomposition Strategy**:
@@ -48,6 +48,7 @@ Before modifying any source code or configuration files, execute discovery and r
    -Dmaven.repo.local=.m2/repository
    ```
    This isolates Maven dependencies inside `.m2/repository` in the workspace root, enabling Nx to cache built module JARs.
+   *Note on Release Pipelines*: If existing deployment/release jobs (`mvn deploy`) expect installed artifacts in `$HOME/.m2/repository`, override `-Dmaven.repo.local=$HOME/.m2/repository` specifically in release pipeline scripts.
 3. **Workspace `.gitignore`**: Ensure `.gitignore` includes:
    ```gitignore
    # Nx & Maven Build Artifacts
@@ -233,7 +234,7 @@ Configure parent `pom.xml` with non-destructive, ratcheted quality gates:
 1. **Action SHA Pinning & Security**: Pin all GitHub Actions to 40-character commit SHAs. Include `permissions: contents: read`, `concurrency`, and `timeout-minutes: 30`.
 2. **CI Caching & Pipeline Steps**:
    - `actions/checkout` with `fetch-depth: 0`.
-   - `actions/cache` for `.m2/repository` (`key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}`).
+   - `actions/cache` for `.m2/repository`: To prevent exceeding GitHub's 10 GB cache quota in large enterprise repositories, cache specific internal groupIds (`.m2/repository/com/acme`) or use `key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}`.
    - `actions/cache` for `.nx/cache` (`key: ${{ runner.os }}-nx-${{ github.sha }}`).
    - `npm run test:plugin`.
    - `npx nx affected -t lint test build --parallel=3`.
@@ -264,24 +265,28 @@ After completing migration, execute this verification protocol:
    touch .github/workflows/ci.yml && npx nx show projects --affected
    # Must mark projects affected
    ```
-4. **Nx Caching & Local `.m2` Restoration**:
+4. **Nx Caching & Local `.m2` Restoration (Layout-Agnostic)**:
    ```bash
-   rm -rf .m2 libs/*/target apps/*/target
+   rm -rf .m2 && find . -name target -type d -prune -exec rm -rf {} +
    npx nx run-many -t build
    find .m2/repository -name "*.jar"
-   # Must restore all module JARs to .m2 from cache
+   # Must restore all built module JARs to .m2 from cache
    ```
 5. **Full Plain-Maven Verification**:
    ```bash
    ./mvnw -B verify
    # Must return 100% BUILD SUCCESS across all reactor modules
    ```
-6. **Baseline Diff Comparison**:
+6. **Baseline Diff Comparison (Dependencies & Test Counts)**:
    ```bash
    ./mvnw -B dependency:tree > /tmp/after-deps.txt
    ./mvnw -B test > /tmp/after-tests.txt
+
+   # Diff dependency tree (must be identical)
    diff /tmp/before-deps.txt /tmp/after-deps.txt
-   # Dependency tree and total test counts must match Phase 0 baselines exactly
+
+   # Diff test counts (must be identical)
+   diff <(grep -h "Tests run:" /tmp/before-tests.txt) <(grep -h "Tests run:" /tmp/after-tests.txt)
    ```
 7. **End-State Enforcement Ratchet**:
    Once initial dependency warnings are resolved, flip `<failOnWarning>true</failOnWarning>` on `maven-dependency-plugin` in root `pom.xml`.
