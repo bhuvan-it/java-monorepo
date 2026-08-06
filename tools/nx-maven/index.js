@@ -1,4 +1,4 @@
-const { readFileSync, existsSync, readdirSync } = require('fs');
+const { readFileSync, existsSync } = require('fs');
 const { join, dirname } = require('path');
 
 const name = 'nx-maven';
@@ -10,7 +10,6 @@ function getPomHeaderSlice(content) {
   cleaned = cleaned.replace(/<dependencyManagement>[\s\S]*?<\/dependencyManagement>/g, '');
   cleaned = cleaned.replace(/<build>[\s\S]*?<\/build>/g, '');
   cleaned = cleaned.replace(/<profiles>[\s\S]*?<\/profiles>/g, '');
-  cleaned = cleaned.replace(/<reporting>[\s\S]*?<\/reporting>/g, '');
   return cleaned;
 }
 
@@ -60,38 +59,13 @@ function parsePomDependencies(content) {
   return result;
 }
 
-function findPomFiles(dir, relativeDir = '') {
-  let results = [];
-  if (!existsSync(dir)) return results;
-  const entries = readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    if (
-      entry.name === 'node_modules' ||
-      entry.name === '.m2' ||
-      entry.name === '.nx' ||
-      entry.name === 'target' ||
-      entry.name.startsWith('.')
-    ) {
-      continue;
-    }
-    const full = join(dir, entry.name);
-    const rel = relativeDir ? join(relativeDir, entry.name) : entry.name;
-    if (entry.isDirectory()) {
-      results = results.concat(findPomFiles(full, rel));
-    } else if (entry.name === 'pom.xml') {
-      results.push(rel.replace(/\\/g, '/'));
-    }
-  }
-  return results;
-}
-
 const createNodesV2 = [
   '**/pom.xml',
   (configFiles, options, context) => {
     const results = [];
     const groupId = options?.groupId ?? 'com.acme';
     const groupIdPath = groupId.split('.').join('/');
-    const env = {};
+    const env = { MAVEN_OPTS: '-Dmaven.repo.local=.m2/repository' };
 
     for (const configFile of configFiles) {
       if (configFile.includes('node_modules') || configFile.includes('.m2')) {
@@ -161,15 +135,17 @@ const createNodesV2 = [
           command: `${mvnCmd} verify -f ${normalizedFile}`,
           cache: true,
           outputs: [
-            `{projectRoot}/target/failsafe-reports`,
             `{projectRoot}/target/surefire-reports`,
-            `{projectRoot}/target/site/jacoco`
+            `{projectRoot}/target/failsafe-reports`,
+            `{projectRoot}/target/site/jacoco`,
+            `{projectRoot}/target/jacoco.exec`
           ],
           options: { cwd: '.', env }
         };
         targets.lint = {
           command: `${mvnCmd} spotless:check -f ${normalizedFile}`,
           cache: true,
+          inputs: ['production', '^production'],
           options: { cwd: '.', env }
         };
         targets.format = {
@@ -217,25 +193,25 @@ const createDependencies = (options, context) => {
   const dependencies = [];
   const workspaceRoot = context.workspaceRoot;
   const groupId = options?.groupId ?? 'com.acme';
-  const pomFiles = findPomFiles(workspaceRoot);
+
+  const projects = Object.values(context.projects || {});
+  const projectPoms = [];
   const knownProjects = new Set();
 
-  for (const file of pomFiles) {
-    const fullPath = join(workspaceRoot, file);
+  for (const config of projects) {
+    const relPom = join(config.root || '.', 'pom.xml').replace(/\\/g, '/');
+    const fullPath = join(workspaceRoot, relPom);
     if (!existsSync(fullPath)) continue;
     const content = readFileSync(fullPath, 'utf8');
     const artifactId = parsePomArtifactId(content);
     if (artifactId) {
       knownProjects.add(artifactId);
+      projectPoms.push({ name: artifactId, file: relPom, content });
     }
   }
 
-  for (const file of pomFiles) {
-    const fullPath = join(workspaceRoot, file);
-    if (!existsSync(fullPath)) continue;
-    const content = readFileSync(fullPath, 'utf8');
-    const artifactId = parsePomArtifactId(content);
-    if (!artifactId) continue;
+  for (const item of projectPoms) {
+    const { name: artifactId, file, content } = item;
 
     const parentArtifactId = parsePomParent(content);
     if (parentArtifactId && knownProjects.has(parentArtifactId) && parentArtifactId !== artifactId) {

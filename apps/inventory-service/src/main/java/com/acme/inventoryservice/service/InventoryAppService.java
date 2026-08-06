@@ -11,10 +11,6 @@ public class InventoryAppService {
     private final AuditLog auditLog;
     private final Map<String, Integer> stockMap = new ConcurrentHashMap<>();
 
-    public InventoryAppService() {
-        this(new AuditLog("INVENTORY-SERVICE"));
-    }
-
     public InventoryAppService(AuditLog auditLog) {
         this.auditLog = auditLog;
     }

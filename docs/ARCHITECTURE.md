@@ -41,10 +41,10 @@ Each module's `build` target declares both its target folder and installed local
 ```
 This ensures that when Nx restores a module build from cache, it restores both the compiled target directory and the `.m2/repository` JAR artifacts.
 
-> **Note**: Because `-Dmaven.repo.local=.m2/repository` uses a relative path, manual `mvn` commands must be executed from the repository root (e.g. `mvn -f libs/common-core/pom.xml ...`). Nx targets automatically handle this.
+> **Note**: Because `-Dmaven.repo.local=.m2/repository` uses a relative path, manual `./mvnw` commands must be executed from the repository root (e.g. `./mvnw -f libs/common-core/pom.xml ...`). Nx targets automatically handle this.
 
 ### 3. Zero-Lock-In
-Deleting `nx.json`, `package.json`, and `tools/` leaves a 100% standard Maven multi-module project where `mvn verify` at the root builds the entire repository seamlessly.
+Deleting `nx.json`, `package.json`, and `tools/` leaves a 100% standard Maven multi-module project where `./mvnw verify` at the root builds the entire repository seamlessly.
 
 ---
 

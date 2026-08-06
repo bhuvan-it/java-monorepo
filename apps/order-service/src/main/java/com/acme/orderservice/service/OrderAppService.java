@@ -1,5 +1,6 @@
 package com.acme.orderservice.service;
 
+import com.acme.common.core.Result;
 import com.acme.common.logging.AuditLog;
 import com.acme.domain.model.Money;
 import com.acme.domain.model.Order;
@@ -14,16 +15,17 @@ public class OrderAppService {
     private final AuditLog auditLog;
     private final OrderRepository repository;
 
-    public OrderAppService(OrderRepository repository) {
+    public OrderAppService(OrderRepository repository, AuditLog auditLog) {
         this.repository = repository;
-        this.auditLog = new AuditLog("ORDER-SERVICE");
+        this.auditLog = auditLog;
     }
 
-    public Order createOrder(String customerId, String sku, int quantity, String amount, String currency) {
+    public Result<Order> createOrder(String customerId, String sku, int quantity, String amount, String currency) {
         OrderLine line = new OrderLine(sku, quantity, Money.of(amount, currency));
-        Order order = Order.create(customerId, List.of(line)).orElseThrow();
-        Order saved = repository.save(order);
-        auditLog.record("CREATE_ORDER", saved.id());
-        return saved;
+        return Order.create(customerId, List.of(line)).map(order -> {
+            Order saved = repository.save(order);
+            auditLog.record("CREATE_ORDER", saved.id());
+            return saved;
+        });
     }
 }

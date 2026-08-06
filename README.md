@@ -11,8 +11,8 @@ This repository implements a production-ready Java 21 monorepo architecture wher
 
 1. **Nx Owns Graph & Caching**: Nx constructs the build graph by parsing POM dependencies and calculates hashes across task inputs and outputs.
 2. **Maven Owns Lifecycle**: Compilation, test execution (Surefire/Failsafe), code style (Spotless), coverage (JaCoCo), and packaging are performed natively by standard Maven plugins.
-3. **No Reactor Coupling**: Nx builds one module at a time (`mvn install -DskipTests -f <path>/pom.xml`) in topological order. Nx never delegates build order determination to the Maven reactor.
-4. **No Lock-in**: The root `pom.xml` retains its `<modules>` aggregator list. Deleting all Nx files (`nx.json`, `package.json`, `tools/`) leaves a 100% standard Maven multi-module project where `mvn verify` at the root builds the entire repository seamlessly.
+3. **No Reactor Coupling**: Nx builds one module at a time (`./mvnw install -DskipTests -f <path>/pom.xml`) in topological order. Nx never delegates build order determination to the Maven reactor.
+4. **No Lock-in**: The root `pom.xml` retains its `<modules>` aggregator list. Deleting all Nx files (`nx.json`, `package.json`, `tools/`) leaves a 100% standard Maven multi-module project where `./mvnw verify` at the root builds the entire repository seamlessly.
 
 ---
 
@@ -59,7 +59,7 @@ We relocate Maven's local repository inside the workspace:
 When Nx caches or restores a build, it caches and restores both the module's `target/` directory AND its installed artifacts in `.m2/repository/com/acme/<artifactId>`.
 
 > [!IMPORTANT]
-> **Caveat**: Because `-Dmaven.repo.local=.m2/repository` uses a relative path, `mvn` commands MUST be executed from the repository root (e.g. `mvn -f libs/common-core/pom.xml ...`). Nx targets automatically run from the workspace root (`cwd: "."`). Running raw `mvn` from inside a subdirectory would resolve `.m2/repository` relative to that subdirectory.
+> **Caveat**: Because `-Dmaven.repo.local=.m2/repository` uses a relative path, `./mvnw` commands MUST be executed from the repository root (e.g. `./mvnw -f libs/common-core/pom.xml ...`). Nx targets automatically run from the workspace root (`cwd: "."`). Running raw `./mvnw` from inside a subdirectory would resolve `.m2/repository` relative to that subdirectory.
 
 ---
 
@@ -118,7 +118,7 @@ When Nx caches or restores a build, it caches and restores both the module's `ta
 
 From the repository root:
 ```bash
-mvn verify
+./mvnw verify
 ```
 
 ---

@@ -1,8 +1,16 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: order-service
-server:
-  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 logging:
   level:
     audit: INFO

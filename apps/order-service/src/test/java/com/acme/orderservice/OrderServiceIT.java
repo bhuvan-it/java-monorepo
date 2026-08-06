@@ -1,23 +1,30 @@
 package com.acme.orderservice;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.acme.domain.model.Order;
-import com.acme.orderservice.service.OrderAppService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OrderServiceIT {
 
     @Autowired
-    private OrderAppService orderAppService;
+    private TestRestTemplate restTemplate;
 
     @Test
-    void testCreateOrderIntegration() {
-        Order order = orderAppService.createOrder("IT-CUST-1", "IT-SKU-1", 1, "10.00", "USD");
-        assertNotNull(order);
-        assertNotNull(order.id());
+    void testCreateOrderRealHttpRoundTrip() {
+        ResponseEntity<Order> response = restTemplate.postForEntity(
+                "/orders?customerId=CUST-IT&sku=SKU-IT&quantity=1&amount=10.00&currency=USD",
+                null,
+                Order.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().customerId()).isEqualTo("CUST-IT");
     }
 }

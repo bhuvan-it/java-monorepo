@@ -226,4 +226,32 @@ describe('nx-maven plugin unit tests', () => {
     const artifactId = plugin.parsePomArtifactId(invalidPomContent);
     assert.equal(artifactId, null);
   });
+
+  test('10. createDependencies uses context.projects to build dependency graph', () => {
+    const tmpDir = createTempWorkspace();
+    try {
+      const libADir = path.join(tmpDir, 'libs', 'lib-a');
+      const libBDir = path.join(tmpDir, 'libs', 'lib-b');
+      fs.mkdirSync(libADir, { recursive: true });
+      fs.mkdirSync(libBDir, { recursive: true });
+
+      fs.writeFileSync(path.join(libADir, 'pom.xml'), `<project><artifactId>lib-a</artifactId></project>`);
+      fs.writeFileSync(path.join(libBDir, 'pom.xml'), `<project><artifactId>lib-b</artifactId><dependencies><dependency><groupId>com.acme</groupId><artifactId>lib-a</artifactId></dependency></dependencies></project>`);
+
+      const context = {
+        workspaceRoot: tmpDir,
+        projects: {
+          'lib-a': { root: 'libs/lib-a' },
+          'lib-b': { root: 'libs/lib-b' }
+        }
+      };
+
+      const deps = plugin.createDependencies({ groupId: 'com.acme' }, context);
+      assert.equal(deps.length, 1);
+      assert.equal(deps[0].source, 'lib-b');
+      assert.equal(deps[0].target, 'lib-a');
+    } finally {
+      cleanupTempWorkspace(tmpDir);
+    }
+  });
 });

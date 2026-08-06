@@ -4,3 +4,9 @@ target/
 node_modules/
 graph.json
 *.log
+
+# IDE & OS
+.idea/
+*.iml
+.vscode/
+.DS_Store

@@ -14,6 +14,7 @@
     <module>libs/persistence</module>
     <module>apps/order-service</module>
     <module>apps/inventory-service</module>
+    <module>libs/coverage-aggregate</module>
   </modules>
 
   <properties>
@@ -42,6 +43,12 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>5.11.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>com.acme</groupId>
         <artifactId>common-core</artifactId>
         <version>${project.version}</version>
@@ -59,6 +66,16 @@
       <dependency>
         <groupId>com.acme</groupId>
         <artifactId>persistence</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.acme</groupId>
+        <artifactId>order-service</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.acme</groupId>
+        <artifactId>inventory-service</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
@@ -185,6 +202,9 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>${jacoco.version}</version>
+        <configuration>
+          <skip>${skipTests}</skip>
+        </configuration>
         <executions>
           <execution>
             <id>prepare-agent</id>
@@ -257,6 +277,14 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring.boot.version}</version>
+        <configuration>
+          <jvmArguments>--enable-preview</jvmArguments>
+        </configuration>
       </plugin>
     </plugins>
   </build>

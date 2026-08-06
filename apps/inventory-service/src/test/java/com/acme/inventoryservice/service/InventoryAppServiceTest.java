@@ -2,6 +2,7 @@ package com.acme.inventoryservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.acme.common.logging.AuditLog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +12,7 @@ class InventoryAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InventoryAppService();
+        service = new InventoryAppService(new AuditLog("TEST"));
     }
 
     @Test

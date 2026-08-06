@@ -18,6 +18,7 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,6 +67,10 @@ jobs:
 
       - name: Verify affected modules (integration tests & JaCoCo gates)
         run: npx nx affected -t verify --parallel=2
+
+      - name: Verify plain-Maven escape hatch
+        if: github.ref == 'refs/heads/main'
+        run: ./mvnw -B verify
 
       - name: Upload test reports
         if: always()

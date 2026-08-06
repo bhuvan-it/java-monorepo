@@ -163,7 +163,7 @@ Run the following commands to confirm your new monorepo is operational:
 
 4. **Verify raw Maven works with Nx bypassed**:
    ```bash
-   mvn verify
+   ./mvnw verify
    ```
 
 ---
